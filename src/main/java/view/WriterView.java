@@ -1,10 +1,10 @@
 package view;
 
-import controller.WriterController;
 import model.Post;
 import model.Writer;
 import repository.PostRepository;
 import repository.sql.SqlPostRepositoryImpl;
+import service.WriterService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +13,8 @@ import java.util.Scanner;
 public class WriterView {
 
     private Scanner scan = new Scanner(System.in);
-    private WriterController writerController = new WriterController();
     private PostRepository postRepository = new SqlPostRepositoryImpl();
+    private WriterService writerService = new WriterService();
 
     public void startWriterView(){
         while (true) {
@@ -54,11 +54,9 @@ public class WriterView {
 
         System.out.println("Введите имя писателя:");
         String writerFirstName = scan.nextLine();
-        writerController.setWriterFirstName(writerFirstName);
 
         System.out.println("Введите фамилию писателся:");
         String writerLastName = scan.nextLine();
-        writerController.setWriterLastName(writerLastName);
 
         List<Post> postList = new ArrayList<Post>();
 
@@ -74,8 +72,7 @@ public class WriterView {
                 System.out.println("Введены не коректные данные");
             }
         }
-        writerController.setWriterPosts(postList);
-        Writer writer = writerController.saveWriter();
+        Writer writer = writerService.save(writerFirstName, writerLastName,postList);
         System.out.println("Писатель сохранен.\n" +
                 "id : " + writer.getId() + "\n" +
                 "Имя : " + writer.getFirstName() + "\n" +
@@ -85,33 +82,29 @@ public class WriterView {
     public void updateView(){
 
         System.out.println("Введите id писателя:");
-        Long id = Long.parseLong(scan.nextLine());
-        writerController.setWriterId(id);
+        Long writerId = Long.valueOf(scan.nextLine());
 
         System.out.println("Введите имя писателя:");
         String writerFirstName = scan.nextLine();
-        writerController.setWriterFirstName(writerFirstName);
 
         System.out.println("Введите фамилию писателся:");
         String writerLastName = scan.nextLine();
-        writerController.setWriterLastName(writerLastName);
 
         List<Post> postList = new ArrayList<Post>();
 
         while (true) {
             System.out.println("Введите id поста писателя:\nДля завершения введите '0'");
             try {
-                id = Long.parseLong(scan.nextLine());
-                if (id == 0) {
+                Long postId = Long.parseLong(scan.nextLine());
+                if (postId == 0) {
                     break;
                 }
-                postList.add(postRepository.getById(id));
+                postList.add(postRepository.getById(postId));
             } catch (Exception e) {
                 System.out.println("Введены не коректные данные");
             }
         }
-        writerController.setWriterPosts(postList);
-        Writer writer = writerController.updateWriter();
+        Writer writer = writerService.update(writerId, writerFirstName, writerLastName, postList);
 
         System.out.println("Писатель обновлен.\n" +
                 "id : " + writer.getId() + "\n" +
@@ -122,7 +115,7 @@ public class WriterView {
     public void getByIdView() {
         System.out.println("Введите id писателя: ");
         Long id = Long.parseLong(scan.nextLine());
-        Writer writer = writerController.getByIdWriter(id);
+        Writer writer = writerService.getById(id);
 
         System.out.println("id : " + writer.getId() + "\n" +
                 "Имя : " + writer.getFirstName() + "\n" +
@@ -130,7 +123,7 @@ public class WriterView {
     }
 
     public void getAllView(){
-        List<Writer> writerList = writerController.getAllWriter();
+        List<Writer> writerList = writerService.getAll();
         System.out.println("Все писатели: ");
         for(Writer writer : writerList) {
             System.out.println("id : " + writer.getId() + "\n" +
@@ -142,7 +135,7 @@ public class WriterView {
     public void deleteByIdView() {
         System.out.println("Введите id писателя: ");
         Long id = Long.parseLong(scan.nextLine());
-        writerController.deleteByidWriter(id);
+        writerService.deleteById(id);
         System.out.println("Писатель с id : " + id + " удален.\n");
     }
 }

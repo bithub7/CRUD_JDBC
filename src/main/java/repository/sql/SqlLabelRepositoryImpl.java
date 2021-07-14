@@ -2,6 +2,7 @@ package repository.sql;
 
 import model.Label;
 import repository.LabelRepository;
+import repository.sql.sql_teams.LabelSQLTeams;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -9,18 +10,12 @@ import java.util.List;
 
 public class SqlLabelRepositoryImpl implements LabelRepository {
 
-    public SqlLabelRepositoryImpl() {
-    }
+    public SqlLabelRepositoryImpl() {}
 
     @Override
     public Label save(Label label) {
-
-        String sql = "INSERT INTO labels VALUES(0, ?)";
         Long id = null;
-
-        try {
-            Connection connection = ConnectDB.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+        try(PreparedStatement preparedStatement = ConnectDB.getPreparedStatement(LabelSQLTeams.ADD_LABEL.getTeam())){
             preparedStatement.setString(1, label.getName());
             preparedStatement.executeUpdate();
             ResultSet resultSet = preparedStatement.getGeneratedKeys();
@@ -36,12 +31,7 @@ public class SqlLabelRepositoryImpl implements LabelRepository {
 
     @Override
     public Label update(Label label) {
-
-        String sql = "UPDATE labels SET name = ? WHERE id = ?;\n";
-        Long id = null;
-
-        try {
-            PreparedStatement preparedStatement = ConnectDB.getConnection().prepareStatement(sql);
+        try(PreparedStatement preparedStatement = ConnectDB.getPreparedStatement(LabelSQLTeams.UPDATE_LABEL.getTeam())){
             preparedStatement.setString(1, label.getName());
             preparedStatement.setLong(2, label.getId());
             preparedStatement.executeUpdate();
@@ -54,11 +44,8 @@ public class SqlLabelRepositoryImpl implements LabelRepository {
     @Override
     public Label getById(Long id) {
 
-        String sql = "SELECT * FROM labels WHERE id = ?";
         Label label = new Label();
-
-        try {
-            PreparedStatement preparedStatement = ConnectDB.getConnection().prepareStatement(sql);
+        try(PreparedStatement preparedStatement = ConnectDB.getPreparedStatement(LabelSQLTeams.GET_LABEL_BY_ID.getTeam())){
             preparedStatement.setLong(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             resultSet.next();
@@ -75,10 +62,8 @@ public class SqlLabelRepositoryImpl implements LabelRepository {
     public List<Label> getAll() {
 
         List<Label> labelList = new ArrayList<Label>();
-        String sql = "SELECT * FROM labels";
-        try {
-            Statement statement = ConnectDB.getConnection().createStatement();
-            ResultSet resultSet = statement.executeQuery(sql);
+        try(PreparedStatement preparedStatement = ConnectDB.getPreparedStatement(LabelSQLTeams.GET_ALL_LABELS.getTeam())){
+            ResultSet resultSet = preparedStatement.executeQuery();
 
             while (resultSet.next()){
                 Label label = new Label();
@@ -89,17 +74,12 @@ public class SqlLabelRepositoryImpl implements LabelRepository {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
-
         return labelList;
     }
 
     @Override
     public void deleteById(Long id) {
-
-        String sql = "DELETE FROM labels WHERE id = ?";
-
-        try {
-            PreparedStatement preparedStatement = ConnectDB.getConnection().prepareStatement(sql);
+        try(PreparedStatement preparedStatement = ConnectDB.getPreparedStatement(LabelSQLTeams.DELETE_LABEL_DY_ID.getTeam())){
             preparedStatement.setLong(1, id);
             preparedStatement.execute();
         } catch (SQLException throwables) {

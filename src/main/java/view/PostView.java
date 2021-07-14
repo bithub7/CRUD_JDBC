@@ -1,10 +1,10 @@
 package view;
 
-import controller.PostController;
 import model.Label;
 import model.Post;
 import repository.LabelRepository;
 import repository.sql.SqlLabelRepositoryImpl;
+import service.PostService;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -13,7 +13,7 @@ import java.util.Scanner;
 
 public class PostView {
 
-    PostController postController = new PostController();
+    PostService postService = new PostService();
     LabelRepository labelRepository = new SqlLabelRepositoryImpl();
     Scanner scan = new Scanner(System.in);
 
@@ -54,8 +54,6 @@ public class PostView {
     public void saveView() {
         System.out.println("Введите контент поста:");
         String postContent = scan.nextLine();
-        postController.setPostContent(postContent);
-
         List<Label> labelList = new ArrayList<Label>();
 
         while (true){
@@ -70,23 +68,18 @@ public class PostView {
                 System.out.println("Введены не коректные данные");
             }
         }
-        postController.setPostLabels(labelList);
-        postController.setCreated(new Date());
-        Post post = postController.savePost();
+        Post post = postService.save(postContent, labelList, new Date());
         System.out.println("Пост сохранен.\n" + post);
     }
 
     public void updateView(){
         System.out.println("Введите id поста для обновление:");
         Long id = Long.parseLong(scan.nextLine());
-        postController.setPostId(id);
 
         System.out.println("Введите контент поста:");
         String postContent = scan.nextLine();
-        postController.setPostContent(postContent);
 
         List<Label> labelList = new ArrayList<Label>();
-
         while (true){
             System.out.println("Введите id тега:\nДля завершения введите '0'");
             try{
@@ -99,21 +92,19 @@ public class PostView {
                 System.out.println("Введены не коректные данные");
             }
         }
-        postController.setPostLabels(labelList);
-        postController.setUpdated(new Date());
-        Post post = postController.updatePost();
+        Post post = postService.update(id, postContent, labelList, new Date());
         System.out.println("Пост обновлен.\n" + post );
     }
 
     public void getByIdView() {
         System.out.println("Введите id поста:");
         Long id = Long.parseLong(scan.nextLine());
-        Post post = postController.getByIdPost(id);
+        Post post = postService.getById(id);
         System.out.println(post);
     }
 
     public void getAllView(){
-        List<Post> postList = postController.getAllLebels();
+        List<Post> postList = postService.getAll();
         System.out.println("Все посты: ");
         for(Post post : postList) {
             System.out.println(post);
@@ -123,7 +114,7 @@ public class PostView {
     public void deleteByIdView() {
         System.out.println("Введите id поста:");
         Long id = Long.parseLong(scan.nextLine());
-        postController.deleteByidPost(id);
+        postService.deleteById(id);
         System.out.println("Пост с id : " + id + " удален.");
     }
 }

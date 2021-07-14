@@ -4,11 +4,11 @@ import model.Post;
 import model.Writer;
 import repository.PostRepository;
 import repository.WriterRepository;
+import repository.sql.sql_teams.WriterSQLTeams;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,59 +17,56 @@ public class SqlWriterRepositoryImpl implements WriterRepository {
     @Override
     public Writer save(Writer writer) {
 
-        String sqlWriters = "INSERT INTO writers VALUES(0, ?,?)";
-        String sqlPostsWriters = "INSERT INTO writer_posts VALUES(?,?)";
         Long id = null;
 
-        try {
-            PreparedStatement preparedStatement = ConnectDB.getConnection().prepareStatement(sqlWriters, Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setString(1, writer.getFirstName());
-            preparedStatement.setString(2, writer.getLastName());
-            preparedStatement.executeUpdate();
-            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+        try(PreparedStatement preparedStatementWriter = ConnectDB.getPreparedStatement(WriterSQLTeams.ADD_WRITERS.getTeam())){
+            preparedStatementWriter.setString(1, writer.getFirstName());
+            preparedStatementWriter.setString(2, writer.getLastName());
+            preparedStatementWriter.executeUpdate();
+            ResultSet resultSet = preparedStatementWriter.getGeneratedKeys();
             if (resultSet.next()) {
                 id = resultSet.getLong(1);
             }
-
-            preparedStatement = ConnectDB.getConnection().prepareStatement(sqlPostsWriters);
-            for(Post post : writer.getPosts()){
-                preparedStatement.setLong(1, id);
-                preparedStatement.setLong(2,post.getId());
-                preparedStatement.executeUpdate();
-            }
-
-            writer.setId(id);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+
+        try(PreparedStatement preparedStatementPost = ConnectDB.getPreparedStatement(WriterSQLTeams.ADD_POSTS_WRITERS.getTeam())) {
+            for (Post post : writer.getPosts()) {
+                preparedStatementPost.setLong(1, id);
+                preparedStatementPost.setLong(2, post.getId());
+                preparedStatementPost.executeUpdate();
+            }
+        }catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        writer.setId(id);
         return writer;
     }
 
     @Override
     public Writer update(Writer writer) {
-        String sqlWriterUpdate = "UPDATE writers SET first_name = ?, last_name = ? WHERE id = ?";
-        String sqlDeletePost = "DELETE FROM writer_posts WHERE writer_id = ?";
-        String sqlUpdatePost = "INSERT INTO writer_posts VALUES (?,?)";
-
-        try {
-            PreparedStatement preparedStatement = ConnectDB.getConnection().prepareStatement(sqlWriterUpdate);
-            preparedStatement.setString(1, writer.getFirstName());
-            preparedStatement.setString(2, writer.getLastName());
-            preparedStatement.setLong(3, writer.getId());
-            preparedStatement.executeUpdate();
-
-            preparedStatement = ConnectDB.getConnection().prepareStatement(sqlDeletePost);
-            preparedStatement.setLong(1, writer.getId());
-            preparedStatement.executeUpdate();
-
-            preparedStatement = ConnectDB.getConnection().prepareStatement(sqlUpdatePost);
-
-            for(Post post : writer.getPosts()){
+        try(PreparedStatement preparedStatementUpdate = ConnectDB.getPreparedStatement(WriterSQLTeams.UPDATE_WRITER.getTeam())){
+            preparedStatementUpdate.setString(1, writer.getFirstName());
+            preparedStatementUpdate.setString(2, writer.getLastName());
+            preparedStatementUpdate.setLong(3, writer.getId());
+            preparedStatementUpdate.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        try(PreparedStatement preparedStatementDelete = ConnectDB.getPreparedStatement(WriterSQLTeams.DELETE_WRITER_POST.getTeam())){
+            preparedStatementDelete.setLong(1, writer.getId());
+            preparedStatementDelete.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        try(PreparedStatement preparedStatement = ConnectDB.getPreparedStatement(WriterSQLTeams.ADD_POSTS_WRITERS.getTeam())) {
+            for (Post post : writer.getPosts()) {
                 preparedStatement.setLong(1, writer.getId());
                 preparedStatement.setLong(2, post.getId());
                 preparedStatement.executeUpdate();
             }
-        } catch (SQLException throwables) {
+        }catch (SQLException throwables) {
             throwables.printStackTrace();
         }
         return writer;
@@ -79,22 +76,15 @@ public class SqlWriterRepositoryImpl implements WriterRepository {
     public Writer getById(Long id) {
 
         Writer writer = new Writer();
-        String sqlGetWriter = "SELECT * FROM writers WHERE id = ?";
-        String sqlGetPostId = "SELECT post_id FROM writer_posts WHERE writer_id = ?";
 
-        try {
-
-            PreparedStatement preparedStatement = ConnectDB.getConnection().prepareStatement(sqlGetWriter);
+        try(PreparedStatement preparedStatement = ConnectDB.getPreparedStatement(WriterSQLTeams.INNER_JOIN_WRITER_POST.getTeam())){
             preparedStatement.setLong(1, id);
+            preparedStatement.setLong(2, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             resultSet.next();
             writer.setId(resultSet.getLong("id"));
             writer.setFirstName(resultSet.getString("first_name"));
             writer.setLastName(resultSet.getString("last_name"));
-
-            preparedStatement = ConnectDB.getConnection().prepareStatement(sqlGetPostId);
-            preparedStatement.setLong(1, id);
-            resultSet = preparedStatement.executeQuery();
             List<Post> postList = getPostList(resultSet);
             writer.setPosts(postList);
         } catch (SQLException throwables) {
@@ -106,13 +96,10 @@ public class SqlWriterRepositoryImpl implements WriterRepository {
     @Override
     public List<Writer> getAll() {
 
-        String sqlGetWriter = "SELECT * FROM writers";
-        String sqlGetWriterPost = "SELECT post_id FROM writer_posts WHERE writer_id = ?";
         List<Writer> writerList = new ArrayList<Writer>();
 
-        try{
-            Statement statement = ConnectDB.getConnection().createStatement();
-            ResultSet resultSet = statement.executeQuery(sqlGetWriter);
+        try(PreparedStatement preparedStatementWriter = ConnectDB.getPreparedStatement(WriterSQLTeams.GET_ALL_WRITERS.getTeam());){
+            ResultSet resultSet = preparedStatementWriter.executeQuery();
 
             while (resultSet.next()){
                 Writer writer = new Writer();
@@ -121,14 +108,17 @@ public class SqlWriterRepositoryImpl implements WriterRepository {
                 writer.setFirstName(resultSet.getString("first_name"));
                 writer.setLastName(resultSet.getString("last_name"));
 
-                PreparedStatement preparedStatement = ConnectDB.getConnection().prepareStatement(sqlGetWriterPost);
-                preparedStatement.setLong(1, id);
-                ResultSet resultSetPost = preparedStatement.executeQuery();
-                List<Post> postList = getPostList(resultSetPost);
-                writer.setPosts(postList);
-                writerList.add(writer);
+                try(PreparedStatement preparedStatementPostId = ConnectDB.getPreparedStatement(WriterSQLTeams.GET_POSTSID_WRITRES.getTeam())) {
+                    preparedStatementPostId.setLong(1, id);
+                    ResultSet resultSetPost = preparedStatementPostId.executeQuery();
+                    List<Post> postList = getPostList(resultSetPost);
+                    writer.setPosts(postList);
+                    writerList.add(writer);
+                }catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                }
             }
-        } catch (SQLException throwables) {
+        }catch (SQLException throwables) {
             throwables.printStackTrace();
         }
         return writerList;
@@ -136,19 +126,15 @@ public class SqlWriterRepositoryImpl implements WriterRepository {
 
     @Override
     public void deleteById(Long id) {
-
-        String sqlDeleteWriter = "DELETE FROM writers WHERE id = ?";
-        String sqlDeleteWriterPost = "DELETE FROM writer_posts WHERE writer_id = ?";
-
-        try {
-            PreparedStatement preparedStatement = ConnectDB.getConnection().prepareStatement(sqlDeleteWriter);
-            preparedStatement.setLong(1, id);
-            preparedStatement.execute();
-
-            preparedStatement = ConnectDB.getConnection().prepareStatement(sqlDeleteWriterPost);
-            preparedStatement.setLong(1, id);
-            preparedStatement.execute();
-
+        try(PreparedStatement preparedStatementWriters = ConnectDB.getPreparedStatement(WriterSQLTeams.DELETE_WRITER.getTeam())){
+            preparedStatementWriters.setLong(1, id);
+            preparedStatementWriters.execute();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        try(PreparedStatement preparedStatementPost = ConnectDB.getPreparedStatement(WriterSQLTeams.DELETE_WRITER_POST.getTeam())){
+            preparedStatementPost.setLong(1, id);
+            preparedStatementPost.execute();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -158,11 +144,9 @@ public class SqlWriterRepositoryImpl implements WriterRepository {
 
         List<Post> postList = new ArrayList<Post>();
         PostRepository postRepository = new SqlPostRepositoryImpl();
-        String sqlGetPost = "SELECT * FROM posts WHERE id = ?";
-        PreparedStatement preparedStatement;
         try{
             while (resultSetPost.next()) {
-                Post post = new Post();
+                Post post;
                 Long postId = resultSetPost.getLong("post_id");
                 post = postRepository.getById(postId);
                 postList.add(post);

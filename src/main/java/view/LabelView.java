@@ -1,14 +1,14 @@
 package view;
 
-import controller.LabelController;
 import model.Label;
+import service.LabelService;
 
 import java.util.List;
 import java.util.Scanner;
 
 public class LabelView {
 
-    LabelController labelController = new LabelController();
+    LabelService labelService = new LabelService();
     Scanner scan = new Scanner(System.in);
 
     public void startLabelView(){
@@ -48,31 +48,32 @@ public class LabelView {
     public void saveView(){
         System.out.println("Введите название тега:");
         String labelName = scan.nextLine();
-        labelController.setLabelName(labelName);
-        Label label = labelController.saveLabel();
+        Label label = labelService.save(labelName);
         System.out.println("Тег создан. name : " + label.getName() + ", id : " + label.getId()+ "\n" );
     }
 
     public void updateView(){
         System.out.println("Введите id тега для обновления:");
         Long id = Long.parseLong(scan.nextLine());
-        labelController.setLabelId(id);
         System.out.println("Введите название тега:");
         String labelName = scan.nextLine();
-        labelController.setLabelName(labelName);
-        Label label = labelController.updateLabel();
+        Label label = labelService.update(id, labelName);
         System.out.println("Тег обновлен. name : " + label.getName() + ", id : " + label.getId()+ "\n" );
     }
 
     public void getByIdView(){
         System.out.println("Введите id тега:");
         Long id = Long.parseLong(scan.nextLine());
-        Label label = labelController.getByIdLabel(id);
-        System.out.println(label.getName()+ "\n" );
+        Label label = labelService.getById(id);
+        if(label == null){
+            System.out.println("Тега с id " + id + " не существует");
+        }else {
+            System.out.println(label.getName() + "\n");
+        }
     }
 
     public void getAllView(){
-        List<Label> labelList = labelController.getAllLebels();
+        List<Label> labelList = labelService.getAll();
         for(Label label : labelList){
             System.out.println("name : " + label.getName() + ", id : " + label.getId());
         }
@@ -82,7 +83,7 @@ public class LabelView {
     public void deleteByIdView(){
         System.out.println("Введите id тега:");
         Long id = Long.parseLong(scan.nextLine());
-        labelController.deleteByidLebal(id);
+        labelService.deleteById(id);
         System.out.println("Тег с id " + id + " удален." + "\n" );
     }
 }

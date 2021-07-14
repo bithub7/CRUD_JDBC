@@ -1,16 +1,16 @@
 package view;
 
 import repository.sql.ConnectDB;
-import java.sql.SQLException;
+
 import java.util.Scanner;
 
 public class MainView {
 
     public void start() {
-        Scanner scan = new Scanner(System.in);
         LabelView labelView = new LabelView();
         PostView postView = new PostView();
         WriterView writerView = new WriterView();
+        Scanner scan = new Scanner(System.in);
 
         while (true) {
             System.out.println("1. Теги\n" +
@@ -19,7 +19,7 @@ public class MainView {
                     "0. Выйти\n");
 
             int num = -1;
-            try {
+            try{
                 num = Integer.parseInt(scan.nextLine());
             } catch (Exception e) {
                 System.out.println("Введены не коректные данные");
@@ -35,13 +35,8 @@ public class MainView {
                         "─────▄█░░▀▀▀▀▀░░█▄\n" +
                         "─▄▄──█░░░░░░░░░░░█──▄▄  bye\n" +
                         "█▄▄█─█░░▀░░┬░░▀░░█─█▄▄█\n");
-                try {
-                    if (ConnectDB.getConnection() != null) {
-                        ConnectDB.getConnection().close();
-                    }
-                } catch (SQLException throwables) {
-                    throwables.printStackTrace();
-                }
+                ConnectDB.close();
+                scan.close();
                 System.exit(0);
 
             } else {
